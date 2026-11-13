@@ -1,0 +1,7 @@
+git init
+printf "__pycache__/\n.pytest_cache/\n*.db\n*.db-wal\n*.db-shm\n" > .gitignore
+git add .
+git commit -m "Add interaction ledger pipeline"
+git branch -M main
+git remote add origin https://github.com/<your-username>/interaction-ledger.git
+git push -u origin main
