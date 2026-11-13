@@ -1,0 +1,329 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Interaction Ledger Dashboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: summary strip first, then trends, then channel scorecard, then ledger health and the raw rows. */
+:root{
+  --bg:#f2f3f0; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --ink3:#7d7c77;
+  --line:#e1e2dd; --grid:#ecece8;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4;
+  --good:#0a7a3d; --warn:#a85f00; --bad:#c2312f;
+  --tip-bg:#161615; --tip-ink:#f6f6f4;
+  --f-head:'Space Grotesk',system-ui,sans-serif; --f-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101010; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --ink3:#8d8c85;
+    --line:#2d2d2b; --grid:#262625;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+    --good:#4cc07a; --warn:#e0a030; --bad:#ef6b69;
+    --tip-bg:#f0efec; --tip-ink:#1a1a19; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101010; --surface:#1a1a19; --ink:#f0efec; --ink2:#c3c2b7; --ink3:#8d8c85;
+  --line:#2d2d2b; --grid:#262625;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181;
+  --good:#4cc07a; --warn:#e0a030; --bad:#ef6b69;
+  --tip-bg:#f0efec; --tip-ink:#1a1a19; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45;
+  padding-block:24px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--f-head);margin:0;text-wrap:balance}
+.num{font-family:var(--f-head);font-variant-numeric:tabular-nums}
+td,th,.tabnum{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+
+header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px}
+header h1{font-size:26px;letter-spacing:-.01em}
+header p{margin:4px 0 0;color:var(--ink2)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--line);background:var(--surface);
+  border-radius:999px;font-size:13px;font-weight:500}
+.pill svg{flex:none}
+.ok{color:var(--good)} .warnc{color:var(--warn)} .badc{color:var(--bad)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.card h2{font-size:15px;font-weight:600}
+.card .sub{color:var(--ink2);font-size:12.5px;margin:2px 0 12px}
+
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kpi .v{font-size:30px;font-weight:600;letter-spacing:-.02em;margin-top:6px;line-height:1.1}
+.kpi .n{color:var(--ink2);font-size:12.5px;margin-top:6px}
+
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 8px;padding:0;list-style:none;font-size:12.5px;color:var(--ink2)}
+.legend li{display:inline-flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:2px;display:inline-block;flex:none}
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{font-family:var(--f-body);font-size:11px;fill:var(--ink3)}
+.chart .tot{fill:var(--ink2);font-weight:600}
+.tip{position:absolute;pointer-events:none;background:var(--tip-bg);color:var(--tip-ink);border-radius:8px;padding:8px 10px;
+  font-size:12px;line-height:1.5;min-width:150px;box-shadow:0 4px 16px rgba(0,0,0,.22);z-index:5;display:none}
+.tip b{font-weight:600}
+.tip .r{display:flex;justify-content:space-between;gap:14px}
+.tip .r span:first-child{display:inline-flex;align-items:center;gap:6px}
+.tip .t{border-top:1px solid rgba(128,128,128,.35);margin-top:4px;padding-top:4px}
+
+.tblwrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:600;text-align:right;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--grid);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+tfoot td{font-weight:600;border-top:1px solid var(--line)}
+.ch{display:inline-flex;align-items:center;gap:8px}
+.bar{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.bar i{display:block;height:8px;border-radius:2px;background:var(--ink3);opacity:.35;width:90px;position:relative}
+.bar i b{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--ink)}
+
+.funnel{display:flex;height:22px;gap:2px;margin:6px 0 10px}
+.funnel span{display:block;min-width:5px;border-radius:2px}
+.fl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;font-size:13px;margin:0;padding:0;list-style:none}
+.fl li{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.fl li span:first-child{display:inline-flex;align-items:center;gap:6px;color:var(--ink2)}
+.facts{display:flex;flex-direction:column;gap:10px;margin:14px 0 0;padding:0;list-style:none;font-size:13px}
+.facts li{display:flex;gap:10px;align-items:flex-start}
+.facts svg{flex:none;margin-top:2px}
+.reasons{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 16px;margin:0;padding:0;list-style:none;font-size:13px}
+.reasons li{display:flex;justify-content:space-between;border-bottom:1px solid var(--grid);padding:4px 0}
+.reasons li span:first-child{color:var(--ink2)}
+.checks{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column;gap:8px;font-size:13px}
+.checks li{display:flex;gap:8px;align-items:center}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.chips button{font:inherit;font-size:12.5px;color:var(--ink2);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 12px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chips button:focus-visible,.pill:focus-visible{outline:2px solid var(--s1);outline-offset:2px}
+.scroll{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.scroll thead th{position:sticky;top:0;background:var(--surface)}
+footer{color:var(--ink3);font-size:12px}
+
+@media (max-width:900px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .row2{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:480px){
+  .kpi .v{font-size:24px}
+  .fl,.reasons{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Agentic Universe · Assignment A</div>
+      <h1>Interaction Ledger</h1>
+      <p id="range"></p>
+    </div>
+    <span class="pill" id="checkpill"></span>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="row2">
+    <div class="card">
+      <h2>Interactions per day</h2>
+      <p class="sub">Each day is bucketed by its start time in India time. Hover a bar for the channel split.</p>
+      <ul class="legend" id="lg1"></ul>
+      <div class="chart" id="c1"></div>
+    </div>
+    <div class="card">
+      <h2>Money collected per day</h2>
+      <p class="sub">Payments count on the day their interaction started. L = lakh (₹1,00,000).</p>
+      <ul class="legend" id="lg2"></ul>
+      <div class="chart" id="c2"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Channel scorecard</h2>
+    <p class="sub">All ten days. Resolution rate is resolved interactions divided by interactions, rounded half up.</p>
+    <div class="tblwrap"><table id="score"></table></div>
+  </section>
+
+  <section class="row2">
+    <div class="card">
+      <h2>Ledger health</h2>
+      <p class="sub" id="healthsub"></p>
+      <ul class="checks" id="checks"></ul>
+      <div class="eyebrow">Where every input row went</div>
+      <div class="funnel" id="funnel" role="img" aria-label="Input rows split into loaded, duplicate, conflicting and rejected"></div>
+      <ul class="fl" id="fl"></ul>
+      <ul class="facts" id="facts"></ul>
+    </div>
+    <div class="card">
+      <h2>Rejected rows</h2>
+      <p class="sub">Each bad row is kept with its reason and raw text, so nothing disappears silently.</p>
+      <ul class="reasons" id="reasons"></ul>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Daily detail</h2>
+    <p class="sub">The same numbers as the charts, one row per day and channel.</p>
+    <div class="chips" id="chips" role="group" aria-label="Filter by channel"></div>
+    <div class="scroll"><table id="detail"></table></div>
+  </section>
+
+  <footer>Built from the ledger's report.json. Money is held as whole paise and rates as basis points, so every figure here is exact.</footer>
+</div>
+
+<script>
+const R = {"by_channel": [{"avg_handle_sec": 1149, "channel": "chat", "collected_minor": 76921994, "handle_n": 68, "handle_sec_sum": 78112, "interactions": 76, "resolution_rate_bps": 5000, "resolved": 38}, {"avg_handle_sec": 1171, "channel": "email", "collected_minor": 64952465, "handle_n": 70, "handle_sec_sum": 81985, "interactions": 78, "resolution_rate_bps": 4487, "resolved": 35}, {"avg_handle_sec": 1170, "channel": "sms", "collected_minor": 91083551, "handle_n": 82, "handle_sec_sum": 95940, "interactions": 86, "resolution_rate_bps": 5465, "resolved": 47}, {"avg_handle_sec": 1107, "channel": "voice", "collected_minor": 69860784, "handle_n": 66, "handle_sec_sum": 73033, "interactions": 76, "resolution_rate_bps": 5000, "resolved": 38}, {"avg_handle_sec": 1067, "channel": "whatsapp", "collected_minor": 133276759, "handle_n": 70, "handle_sec_sum": 74720, "interactions": 84, "resolution_rate_bps": 5714, "resolved": 48}], "checks": {"collected_reconciles_to_ledger": true, "interactions_reconcile_to_ledger": true, "resolved_not_above_interactions": true}, "daily_channel": [{"avg_handle_sec": 976, "channel": "chat", "collected_minor": 13214414, "date": "2026-10-28", "handle_n": 11, "handle_sec_sum": 10731, "interactions": 12, "resolution_rate_bps": 5833, "resolved": 7}, {"avg_handle_sec": 1231, "channel": "email", "collected_minor": 4180889, "date": "2026-10-28", "handle_n": 9, "handle_sec_sum": 11075, "interactions": 9, "resolution_rate_bps": 2222, "resolved": 2}, {"avg_handle_sec": 1089, "channel": "sms", "collected_minor": 8095835, "date": "2026-10-28", "handle_n": 8, "handle_sec_sum": 8709, "interactions": 9, "resolution_rate_bps": 6667, "resolved": 6}, {"avg_handle_sec": 884, "channel": "voice", "collected_minor": 4175000, "date": "2026-10-28", "handle_n": 6, "handle_sec_sum": 5305, "interactions": 8, "resolution_rate_bps": 3750, "resolved": 3}, {"avg_handle_sec": 1195, "channel": "whatsapp", "collected_minor": 6743306, "date": "2026-10-28", "handle_n": 9, "handle_sec_sum": 10755, "interactions": 13, "resolution_rate_bps": 4615, "resolved": 6}, {"avg_handle_sec": 1129, "channel": "chat", "collected_minor": 1794171, "date": "2026-10-29", "handle_n": 9, "handle_sec_sum": 10158, "interactions": 9, "resolution_rate_bps": 1111, "resolved": 1}, {"avg_handle_sec": 1624, "channel": "email", "collected_minor": 6386083, "date": "2026-10-29", "handle_n": 4, "handle_sec_sum": 6497, "interactions": 7, "resolution_rate_bps": 4286, "resolved": 3}, {"avg_handle_sec": 1422, "channel": "sms", "collected_minor": 2911342, "date": "2026-10-29", "handle_n": 6, "handle_sec_sum": 8533, "interactions": 7, "resolution_rate_bps": 1429, "resolved": 1}, {"avg_handle_sec": 1265, "channel": "voice", "collected_minor": 1858685, "date": "2026-10-29", "handle_n": 7, "handle_sec_sum": 8855, "interactions": 9, "resolution_rate_bps": 4444, "resolved": 4}, {"avg_handle_sec": 832, "channel": "whatsapp", "collected_minor": 12835315, "date": "2026-10-29", "handle_n": 10, "handle_sec_sum": 8315, "interactions": 11, "resolution_rate_bps": 4545, "resolved": 5}, {"avg_handle_sec": 1006, "channel": "chat", "collected_minor": 2484076, "date": "2026-10-30", "handle_n": 3, "handle_sec_sum": 3017, "interactions": 3, "resolution_rate_bps": 6667, "resolved": 2}, {"avg_handle_sec": 1097, "channel": "email", "collected_minor": 10103879, "date": "2026-10-30", "handle_n": 5, "handle_sec_sum": 5483, "interactions": 8, "resolution_rate_bps": 2500, "resolved": 2}, {"avg_handle_sec": 1119, "channel": "sms", "collected_minor": 1200759, "date": "2026-10-30", "handle_n": 5, "handle_sec_sum": 5597, "interactions": 5, "resolution_rate_bps": 4000, "resolved": 2}, {"avg_handle_sec": 813, "channel": "voice", "collected_minor": 19707413, "date": "2026-10-30", "handle_n": 9, "handle_sec_sum": 7321, "interactions": 9, "resolution_rate_bps": 6667, "resolved": 6}, {"avg_handle_sec": 703, "channel": "whatsapp", "collected_minor": 10115223, "date": "2026-10-30", "handle_n": 8, "handle_sec_sum": 5620, "interactions": 8, "resolution_rate_bps": 5000, "resolved": 4}, {"avg_handle_sec": 1600, "channel": "chat", "collected_minor": 3675454, "date": "2026-10-31", "handle_n": 4, "handle_sec_sum": 6399, "interactions": 6, "resolution_rate_bps": 5000, "resolved": 3}, {"avg_handle_sec": 740, "channel": "email", "collected_minor": 2703054, "date": "2026-10-31", "handle_n": 4, "handle_sec_sum": 2958, "interactions": 5, "resolution_rate_bps": 6000, "resolved": 3}, {"avg_handle_sec": 1452, "channel": "sms", "collected_minor": 4639423, "date": "2026-10-31", "handle_n": 10, "handle_sec_sum": 14516, "interactions": 11, "resolution_rate_bps": 6364, "resolved": 7}, {"avg_handle_sec": 1543, "channel": "voice", "collected_minor": 9900690, "date": "2026-10-31", "handle_n": 2, "handle_sec_sum": 3085, "interactions": 2, "resolution_rate_bps": 10000, "resolved": 2}, {"avg_handle_sec": 1169, "channel": "whatsapp", "collected_minor": 1664246, "date": "2026-10-31", "handle_n": 5, "handle_sec_sum": 5846, "interactions": 5, "resolution_rate_bps": 2000, "resolved": 1}, {"avg_handle_sec": 1207, "channel": "chat", "collected_minor": 10586464, "date": "2026-11-01", "handle_n": 7, "handle_sec_sum": 8446, "interactions": 7, "resolution_rate_bps": 8571, "resolved": 6}, {"avg_handle_sec": 1022, "channel": "email", "collected_minor": 20367158, "date": "2026-11-01", "handle_n": 16, "handle_sec_sum": 16345, "interactions": 16, "resolution_rate_bps": 6250, "resolved": 10}, {"avg_handle_sec": 1153, "channel": "sms", "collected_minor": 23772742, "date": "2026-11-01", "handle_n": 14, "handle_sec_sum": 16140, "interactions": 15, "resolution_rate_bps": 5333, "resolved": 8}, {"avg_handle_sec": 1192, "channel": "voice", "collected_minor": 8904630, "date": "2026-11-01", "handle_n": 6, "handle_sec_sum": 7154, "interactions": 7, "resolution_rate_bps": 7143, "resolved": 5}, {"avg_handle_sec": 1267, "channel": "whatsapp", "collected_minor": 15123661, "date": "2026-11-01", "handle_n": 7, "handle_sec_sum": 8867, "interactions": 9, "resolution_rate_bps": 5556, "resolved": 5}, {"avg_handle_sec": 1264, "channel": "chat", "collected_minor": 6572724, "date": "2026-11-02", "handle_n": 7, "handle_sec_sum": 8846, "interactions": 8, "resolution_rate_bps": 3750, "resolved": 3}, {"avg_handle_sec": 1640, "channel": "email", "collected_minor": 4812188, "date": "2026-11-02", "handle_n": 5, "handle_sec_sum": 8198, "interactions": 6, "resolution_rate_bps": 3333, "resolved": 2}, {"avg_handle_sec": 1041, "channel": "sms", "collected_minor": 17618595, "date": "2026-11-02", "handle_n": 14, "handle_sec_sum": 14577, "interactions": 14, "resolution_rate_bps": 6429, "resolved": 9}, {"avg_handle_sec": 547, "channel": "voice", "collected_minor": 5837135, "date": "2026-11-02", "handle_n": 4, "handle_sec_sum": 2187, "interactions": 4, "resolution_rate_bps": 2500, "resolved": 1}, {"avg_handle_sec": 1286, "channel": "whatsapp", "collected_minor": 5441803, "date": "2026-11-02", "handle_n": 5, "handle_sec_sum": 6430, "interactions": 7, "resolution_rate_bps": 7143, "resolved": 5}, {"avg_handle_sec": 1398, "channel": "chat", "collected_minor": 8171404, "date": "2026-11-03", "handle_n": 5, "handle_sec_sum": 6988, "interactions": 6, "resolution_rate_bps": 5000, "resolved": 3}, {"avg_handle_sec": 953, "channel": "email", "collected_minor": 0, "date": "2026-11-03", "handle_n": 4, "handle_sec_sum": 3812, "interactions": 4, "resolution_rate_bps": 2500, "resolved": 1}, {"avg_handle_sec": 1016, "channel": "sms", "collected_minor": 0, "date": "2026-11-03", "handle_n": 4, "handle_sec_sum": 4063, "interactions": 4, "resolution_rate_bps": 5000, "resolved": 2}, {"avg_handle_sec": 728, "channel": "voice", "collected_minor": 5772276, "date": "2026-11-03", "handle_n": 8, "handle_sec_sum": 5822, "interactions": 10, "resolution_rate_bps": 5000, "resolved": 5}, {"avg_handle_sec": 964, "channel": "whatsapp", "collected_minor": 25476915, "date": "2026-11-03", "handle_n": 7, "handle_sec_sum": 6748, "interactions": 8, "resolution_rate_bps": 10000, "resolved": 8}, {"avg_handle_sec": 1142, "channel": "chat", "collected_minor": 4139198, "date": "2026-11-04", "handle_n": 8, "handle_sec_sum": 9132, "interactions": 8, "resolution_rate_bps": 5000, "resolved": 4}, {"avg_handle_sec": 927, "channel": "email", "collected_minor": 2148370, "date": "2026-11-04", "handle_n": 6, "handle_sec_sum": 5564, "interactions": 6, "resolution_rate_bps": 3333, "resolved": 2}, {"avg_handle_sec": 1053, "channel": "sms", "collected_minor": 14144187, "date": "2026-11-04", "handle_n": 9, "handle_sec_sum": 9474, "interactions": 9, "resolution_rate_bps": 5556, "resolved": 5}, {"avg_handle_sec": 1415, "channel": "voice", "collected_minor": 4380865, "date": "2026-11-04", "handle_n": 9, "handle_sec_sum": 12737, "interactions": 12, "resolution_rate_bps": 5833, "resolved": 7}, {"avg_handle_sec": 985, "channel": "whatsapp", "collected_minor": 30946507, "date": "2026-11-04", "handle_n": 8, "handle_sec_sum": 7878, "interactions": 8, "resolution_rate_bps": 8750, "resolved": 7}, {"avg_handle_sec": 1317, "channel": "chat", "collected_minor": 9714403, "date": "2026-11-05", "handle_n": 9, "handle_sec_sum": 11852, "interactions": 10, "resolution_rate_bps": 6000, "resolved": 6}, {"avg_handle_sec": 1393, "channel": "email", "collected_minor": 3879273, "date": "2026-11-05", "handle_n": 5, "handle_sec_sum": 6966, "interactions": 5, "resolution_rate_bps": 8000, "resolved": 4}, {"avg_handle_sec": 1226, "channel": "sms", "collected_minor": 7859654, "date": "2026-11-05", "handle_n": 3, "handle_sec_sum": 3678, "interactions": 3, "resolution_rate_bps": 6667, "resolved": 2}, {"avg_handle_sec": 1198, "channel": "voice", "collected_minor": 6422965, "date": "2026-11-05", "handle_n": 10, "handle_sec_sum": 11976, "interactions": 10, "resolution_rate_bps": 3000, "resolved": 3}, {"avg_handle_sec": 1287, "channel": "whatsapp", "collected_minor": 9180256, "date": "2026-11-05", "handle_n": 5, "handle_sec_sum": 6436, "interactions": 8, "resolution_rate_bps": 5000, "resolved": 4}, {"avg_handle_sec": 509, "channel": "chat", "collected_minor": 16569686, "date": "2026-11-06", "handle_n": 5, "handle_sec_sum": 2543, "interactions": 7, "resolution_rate_bps": 4286, "resolved": 3}, {"avg_handle_sec": 1257, "channel": "email", "collected_minor": 10371571, "date": "2026-11-06", "handle_n": 12, "handle_sec_sum": 15087, "interactions": 12, "resolution_rate_bps": 5000, "resolved": 6}, {"avg_handle_sec": 1184, "channel": "sms", "collected_minor": 10841014, "date": "2026-11-06", "handle_n": 9, "handle_sec_sum": 10653, "interactions": 9, "resolution_rate_bps": 5556, "resolved": 5}, {"avg_handle_sec": 1718, "channel": "voice", "collected_minor": 2901125, "date": "2026-11-06", "handle_n": 5, "handle_sec_sum": 8591, "interactions": 5, "resolution_rate_bps": 4000, "resolved": 2}, {"avg_handle_sec": 1304, "channel": "whatsapp", "collected_minor": 15749527, "date": "2026-11-06", "handle_n": 6, "handle_sec_sum": 7825, "interactions": 7, "resolution_rate_bps": 4286, "resolved": 3}], "data_quality": {"conflicting_rows": 2, "cross_channel_customers": 56, "duplicate_rows_ignored": 502, "events_in_ledger": 1617, "headless_collected_minor": 1982804, "headless_interactions": 4, "interactions_without_valid_handle_time": 44, "reject_reasons": {"bad_timestamp": 1, "invalid_json": 1, "invalid_phone": 1, "missing_interaction_id": 1, "negative_amount": 1, "payment_missing_amount": 1, "timestamp_out_of_range": 1, "unknown_channel": 1, "unknown_event_type": 1, "unsupported_currency": 1}, "rejected_rows": 10}, "overall": {"avg_handle_sec": 1134, "collected_minor": 436095553, "handle_n": 356, "handle_sec_sum": 403790, "interactions": 400, "resolution_rate_bps": 5150, "resolved": 206}, "timezone": "Asia/Kolkata"};
+const CH = [
+  {k:'voice',n:'Voice',c:'var(--s1)'},{k:'chat',n:'Chat',c:'var(--s2)'},{k:'sms',n:'SMS',c:'var(--s3)'},
+  {k:'whatsapp',n:'WhatsApp',c:'var(--s4)'},{k:'email',n:'Email',c:'var(--s5)'}
+];
+const $ = id => document.getElementById(id);
+const pad2 = n => String(n).padStart(2,'0');
+const group = s => { s=String(s); if(s.length<=3) return s; const l=s.slice(-3); let r=s.slice(0,-3), out=[];
+  while(r.length>2){out.unshift(r.slice(-2)); r=r.slice(0,-2);} if(r) out.unshift(r); return out.join(',')+','+l; };
+const inr = m => '₹'+group(Math.floor(m/100))+'.'+pad2(m%100);
+const pct = b => b==null?'-':Math.floor(b/100)+'.'+pad2(b%100)+'%';
+const dur = s => s==null?'-':Math.floor(s/60)+'m '+pad2(s%60)+'s';
+const lakh = m => { const t=Math.round(m/1e6); return '₹'+Math.floor(t/10)+(t%10?'.'+(t%10):'')+'L'; };
+const ico = {
+  ok:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4.8 8.3l2.2 2.2 4.2-4.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  warn:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.8l6.6 11.7H1.4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 6.5v3.2M8 11.4v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  bad:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  info:'<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 7.2v4M8 4.9v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+};
+
+const rows = R.daily_channel, O = R.overall, Q = R.data_quality;
+const dates = [...new Set(rows.map(r=>r.date))].sort();
+const byDay = {}; rows.forEach(r => { (byDay[r.date] = byDay[r.date] || {})[r.channel] = r; });
+const dlabel = d => new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+const dlong = d => new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+
+/* header */
+$('range').textContent = dlabel(dates[0])+' to '+dlabel(dates[dates.length-1])+' 2026 · dates in '+R.timezone+' · '+O.interactions+' interactions across '+CH.length+' channels';
+const allOk = Object.values(R.checks).every(Boolean);
+$('checkpill').innerHTML = '<span class="'+(allOk?'ok':'badc')+'">'+(allOk?ico.ok:ico.bad)+'</span>'+(allOk?'All '+Object.keys(R.checks).length+' reconciliation checks pass':'A reconciliation check failed');
+
+/* KPIs */
+$('kpis').innerHTML = [
+  ['Interactions', O.interactions, O.resolved+' resolved, '+(O.interactions-O.resolved)+' open'],
+  ['Resolution rate', pct(O.resolution_rate_bps), O.resolved+' of '+O.interactions+' interactions'],
+  ['Collected', inr(O.collected_minor), '+ '+inr(Q.headless_collected_minor)+' on '+Q.headless_interactions+' interactions with no start event'],
+  ['Average handle time', dur(O.avg_handle_sec), O.handle_n+' interactions have a valid start and end']
+].map(([l,v,n])=>'<div class="card kpi"><div class="eyebrow">'+l+'</div><div class="v num">'+v+'</div><div class="n">'+n+'</div></div>').join('');
+
+/* legends */
+const lg = CH.map(c=>'<li><span class="dot" style="background:'+c.c+'"></span>'+c.n+'</li>').join('');
+$('lg1').innerHTML = lg; $('lg2').innerHTML = lg;
+
+/* helpers */
+function niceStep(max){ const raw=max/4, p=Math.pow(10,Math.floor(Math.log10(raw)));
+  for(const f of [1,2,2.5,5,10]) if(f*p>=raw) return f*p; return 10*p; }
+
+function stacked(el, val, fmtAxis, fmtTot, fmtVal, ml){
+  const W = Math.max(260, el.clientWidth), H = 270, m = {l:ml,r:4,t:20,b:26};
+  const totals = dates.map(d => CH.reduce((s,c)=>s+val(byDay[d][c.k]),0));
+  const step = niceStep(Math.max(...totals)), top = Math.ceil(Math.max(...totals)/step)*step;
+  const y = v => m.t + (H-m.t-m.b)*(1-v/top);
+  const bw = (W-m.l-m.r)/dates.length, barW = Math.min(46, bw*0.64);
+  const cx = i => m.l + bw*i + bw/2;
+  let s = '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Stacked bars by day and channel; the table below has the same numbers">';
+  for(let v=0; v<=top+1e-9; v+=step){
+    s += '<line x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--grid)"/>'+
+         '<text x="'+(m.l-6)+'" y="'+(y(v)+3.5)+'" text-anchor="end">'+fmtAxis(v)+'</text>';
+  }
+  s += '<rect id="hl" x="0" y="'+m.t+'" width="'+bw+'" height="'+(H-m.t-m.b)+'" fill="var(--ink)" opacity="0" rx="4"/>';
+  dates.forEach((d,i)=>{
+    let acc = 0;
+    CH.forEach(c=>{
+      const v = val(byDay[d][c.k]); if(!v) return;
+      const y1 = y(acc+v), y0 = y(acc);
+      s += '<rect x="'+(cx(i)-barW/2)+'" y="'+y1+'" width="'+barW+'" height="'+Math.max(0,y0-y1-2)+'" fill="'+c.c+'" rx="1.5"/>';
+      acc += v;
+    });
+    s += '<text class="tot" x="'+cx(i)+'" y="'+(y(acc)-6)+'" text-anchor="middle">'+fmtTot(acc)+'</text>'+
+         '<text x="'+cx(i)+'" y="'+(H-8)+'" text-anchor="middle">'+dlabel(d)+'</text>';
+  });
+  s += '</svg><div class="tip"></div>';
+  el.innerHTML = s;
+  const svg = el.querySelector('svg'), tip = el.querySelector('.tip'), hl = el.querySelector('#hl');
+  function show(ev){
+    const r = svg.getBoundingClientRect(), sc = W / r.width, x = (ev.clientX - r.left) * sc;
+    const i = Math.min(dates.length-1, Math.max(0, Math.floor((x-m.l)/bw)));
+    if(x < m.l - 4 || x > W) return hide();
+    const d = dates[i];
+    hl.setAttribute('x', m.l + bw*i); hl.setAttribute('opacity', '.07');
+    tip.innerHTML = '<b>'+dlong(d)+'</b>'+CH.map(c=>'<div class="r"><span><i class="dot" style="background:'+c.c+'"></i>'+c.n+'</span><span class="tabnum">'+fmtVal(val(byDay[d][c.k]))+'</span></div>').join('')+
+      '<div class="r t"><b>Total</b><b class="tabnum">'+fmtVal(totals[i])+'</b></div>';
+    tip.style.display = 'block';
+    const px = cx(i) / sc, tw = tip.offsetWidth;
+    tip.style.left = (px > r.width/2 ? px - tw - barW/2/sc - 6 : px + barW/2/sc + 6) + 'px';
+    tip.style.top = '24px';
+  }
+  function hide(){ tip.style.display='none'; hl.setAttribute('opacity','0'); }
+  svg.addEventListener('pointermove', show); svg.addEventListener('pointerdown', show); svg.addEventListener('pointerleave', hide);
+}
+function drawCharts(){
+  stacked($('c1'), r=>r?r.interactions:0, v=>v, v=>v, v=>String(v), 28);
+  stacked($('c2'), r=>r?r.collected_minor:0, lakh, lakh, inr, 46);
+}
+drawCharts();
+let lastW = $('c1').clientWidth;
+new ResizeObserver(()=>{ const w=$('c1').clientWidth; if(Math.abs(w-lastW)>2){ lastW=w; drawCharts(); } }).observe($('c1'));
+
+/* scorecard */
+const chRow = k => rows.length && R.by_channel.find(b=>b.channel===k);
+const nameOf = k => CH.find(c=>c.k===k).n, colOf = k => CH.find(c=>c.k===k).c;
+function srow(label, r, dotColor){
+  return '<tr><td><span class="ch">'+(dotColor?'<span class="dot" style="background:'+dotColor+'"></span>':'')+label+'</span></td>'+
+    '<td>'+r.interactions+'</td><td>'+r.resolved+'</td>'+
+    '<td><span class="bar"><span>'+pct(r.resolution_rate_bps)+'</span><i><b style="width:'+(r.resolution_rate_bps/100)+'%"></b></i></span></td>'+
+    '<td>'+inr(r.collected_minor)+'</td><td>'+dur(r.avg_handle_sec)+'</td></tr>';
+}
+$('score').innerHTML = '<thead><tr><th>Channel</th><th>Interactions</th><th>Resolved</th><th>Resolution rate</th><th>Collected</th><th>Avg handle</th></tr></thead><tbody>'+
+  CH.map(c=>srow(c.n, R.by_channel.find(b=>b.channel===c.k), c.c)).join('')+'</tbody><tfoot>'+srow('All channels', O).replace(/<tr>/,'<tr>')+'</tfoot>';
+
+/* ledger health */
+const labels = {
+  collected_reconciles_to_ledger:'Money collected matches the ledger payment total',
+  interactions_reconcile_to_ledger:'Interaction count matches the ledger',
+  resolved_not_above_interactions:'Resolved never exceeds interactions'
+};
+$('checks').innerHTML = Object.entries(R.checks).map(([k,v])=>'<li><span class="'+(v?'ok':'badc')+'">'+(v?ico.ok:ico.bad)+'</span>'+(labels[k]||k)+' <span class="eyebrow" style="margin-left:auto">'+(v?'Pass':'Fail')+'</span></li>').join('');
+const totalRows = Q.events_in_ledger + Q.duplicate_rows_ignored + Q.conflicting_rows + Q.rejected_rows;
+$('healthsub').textContent = totalRows.toLocaleString('en-IN')+' input rows read from 4 files.';
+const parts = [
+  ['Loaded as new events', Q.events_in_ledger, 'var(--ink)'],
+  ['Duplicates ignored', Q.duplicate_rows_ignored, 'var(--ink3)'],
+  ['Conflicts recorded', Q.conflicting_rows, 'var(--warn)'],
+  ['Rejected', Q.rejected_rows, 'var(--bad)']
+];
+$('funnel').innerHTML = parts.map(p=>'<span style="flex:'+p[1]+';background:'+p[2]+'" title="'+p[0]+': '+p[1]+'"></span>').join('');
+$('fl').innerHTML = parts.map(p=>'<li><span><i class="dot" style="background:'+p[2]+'"></i>'+p[0]+'</span><b class="tabnum">'+p[1].toLocaleString('en-IN')+'</b></li>').join('');
+$('facts').innerHTML = [
+  ['warn', '<b>'+Q.conflicting_rows+' conflicting events</b>: the same event ID arrived with a different amount. The first copy was kept and both disagreements are logged for review.'],
+  ['info', '<b>'+Q.headless_interactions+' interactions have no start event</b> ('+inr(Q.headless_collected_minor)+'). They are shown here, not placed on a guessed day.'],
+  ['info', '<b>'+Q.interactions_without_valid_handle_time+' interactions</b> have no valid end time and are left out of average handle time.'],
+  ['info', '<b>'+Q.cross_channel_customers+' customers</b> used more than one channel.']
+].map(([t,h])=>'<li><span class="'+(t==='warn'?'warnc':'')+'" style="color:'+(t==='warn'?'var(--warn)':'var(--ink3)')+'">'+ico[t]+'</span><span>'+h+'</span></li>').join('');
+$('reasons').innerHTML = Object.entries(Q.reject_reasons).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]))
+  .map(([k,v])=>'<li><span>'+k.replace(/_/g,' ')+'</span><b class="tabnum">'+v+'</b></li>').join('');
+
+/* detail table */
+let filt = 'all';
+function drawDetail(){
+  const list = rows.filter(r=>filt==='all'||r.channel===filt);
+  $('detail').innerHTML = '<thead><tr><th>Date</th><th style="text-align:left">Channel</th><th>Interactions</th><th>Resolved</th><th>Rate</th><th>Collected</th><th>Avg handle</th></tr></thead><tbody>'+
+    list.map(r=>'<tr><td>'+dlong(r.date)+'</td><td style="text-align:left"><span class="ch"><span class="dot" style="background:'+colOf(r.channel)+'"></span>'+nameOf(r.channel)+'</span></td><td>'+r.interactions+'</td><td>'+r.resolved+'</td><td>'+pct(r.resolution_rate_bps)+'</td><td>'+inr(r.collected_minor)+'</td><td>'+dur(r.avg_handle_sec)+'</td></tr>').join('')+'</tbody>';
+}
+$('chips').innerHTML = [['all','All channels']].concat(CH.map(c=>[c.k,c.n])).map(([k,n])=>'<button type="button" data-k="'+k+'" aria-pressed="'+(k==='all')+'">'+n+'</button>').join('');
+$('chips').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return; filt = b.dataset.k;
+  $('chips').querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed', String(x===b)));
+  drawDetail();
+});
+drawDetail();
+</script>
+
+</body></html>
